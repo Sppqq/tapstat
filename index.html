@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Click Counter</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+<style>
+body {
+  font-family: sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background-color: #f0f0f0;
+  color: #333;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 30px;
+  background-color: #fff;
+  border-radius: 10px;
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+h1 {
+  margin-bottom: 20px;
+  transition: color 0.3s ease;
+}
+
+button {
+  margin: 10px;
+  padding: 15px 30px;
+  font-size: 18px;
+  border: none;
+  border-radius: 5px;
+  background-color: #4CAF50; /* Оставляем цвет кнопок по умолчанию */
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+button:hover {
+  background-color: #45a049; /* Оставляем цвет кнопок при наведении по умолчанию */
+}
+
+button:disabled {
+  background-color: #ddd;
+  cursor: not-allowed;
+}
+
+#tapButton {
+  width: 200px;
+  height: 200px;
+  font-size: 36px;
+  border-radius: 50%;
+  background-color: #008CBA;
+  color: white;
+  transition: background-color 0.3s ease;
+}
+
+#tapButton:hover {
+  background-color: #0077a5;
+}
+
+#counter {
+  margin-top: 20px;
+  font-size: 24px;
+  transition: color 0.3s ease;
+}
+
+#tqdm {
+  margin-top: 10px;
+  font-size: 18px;
+  transition: color 0.3s ease;
+}
+
+/* Стили для переключателя темы */
+.theme-toggle {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  cursor: pointer;
+  width: 60px;
+  height: 30px;
+  border-radius: 15px;
+  background-color: #ccc;
+  transition: background-color 0.3s ease;
+}
+
+.theme-toggle.dark-mode {
+  background-color: #222;
+}
+
+.theme-toggle:before {
+  content: '';
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: white;
+  transition: transform 0.3s ease;
+}
+
+.theme-toggle.dark-mode:before {
+  transform: translateX(25px); 
+}
+
+/* Стили для темной темы */
+.dark-mode {
+  background-color: #333;
+  color: #fff;
+}
+
+.dark-mode .container {
+  background-color: #222;
+}
+
+/* Изменяем цвет только у #tapButton в темной теме */
+.dark-mode #tapButton {
+  background-color: #ffc107; 
+}
+</style>
+</head>
+<body>
+  <div class="theme-toggle"></div> 
+
+  <div class="container">
+    <h1>Click Counter</h1>
+    <button id="startButton">Start</button>
+    <button id="pauseButton" disabled>Pause</button>
+    <button id="resetButton" disabled>Reset</button>
+    <button id="tapButton">Tap</button>
+    <div id="counter">0</div>
+    <div id="tqdm"></div>
+  </div>
+
+  <script>
+    let startTime, pausedTime, intervalId, lastTapTime;
+    let tapCount = 0;
+    let isRunning = false;
+
+    const startButton = document.getElementById('startButton');
+    const pauseButton = document.getElementById('pauseButton');
+    const resetButton = document.getElementById('resetButton');
+    const tapButton = document.getElementById('tapButton');
+    const counterDisplay = document.getElementById('counter');
+    const tqdmDisplay = document.getElementById('tqdm');
+    const themeToggle = document.querySelector('.theme-toggle');
+    const body = document.body;
+
+    function startTimer() {
+      if (!isRunning) {
+        if (pausedTime) {
+          startTime = Date.now() - pausedTime;
+          pausedTime = null;
+        } else {
+          startTime = Date.now();
+          lastTapTime = startTime;
+        }
+        intervalId = setInterval(updateDisplay, 100);
+        isRunning = true;
+        startButton.disabled = true;
+        pauseButton.disabled = false;
+        resetButton.disabled = true; 
+      }
+    }
+
+    function pauseTimer() {
+      if (isRunning) {
+        clearInterval(intervalId);
+        pausedTime = Date.now() - startTime;
+        isRunning = false;
+        startButton.disabled = false;
+        pauseButton.disabled = true;
+        resetButton.disabled = false; 
+      }
+    }
+
+    function resetTimer() {
+      if (confirm("Вы уверены, что хотите сбросить счетчик?")) {
+        clearInterval(intervalId);
+        tapCount = 0;
+        counterDisplay.textContent = '0';
+        tqdmDisplay.textContent = '';
+        isRunning = false;
+        pausedTime = null;
+        startButton.disabled = false;
+        pauseButton.disabled = true;
+        resetButton.disabled = true;
+        lastTapTime = null; 
+      }
+    }
+
+    function updateDisplay() {
+      const elapsedTime = Date.now() - startTime;
+      counterDisplay.textContent = tapCount;
+    }
+
+    function formatTime(ms) {
+      const seconds = Math.floor(ms / 1000);
+      const minutes = Math.floor(seconds / 60);
+      const remainingSeconds = seconds % 60;
+      return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+    }
+
+    function handleTap() {
+      if (isRunning) {
+        const currentTime = Date.now();
+        let timeSinceLastTap = 0; 
+        if (lastTapTime) {
+          timeSinceLastTap = currentTime - lastTapTime;
+        }
+
+        lastTapTime = currentTime;
+        tapCount++;
+
+        const secondsPerTap = (timeSinceLastTap / 1000).toFixed(2);
+        tqdmDisplay.textContent = `${tapCount}it [${formatTime(currentTime - startTime)}, ${secondsPerTap}s/tap]`;
+
+        counterDisplay.textContent = tapCount;
+      }
+    }
+
+    startButton.addEventListener('click', startTimer);
+    pauseButton.addEventListener('click', pauseTimer);
+    resetButton.addEventListener('click', resetTimer);
+    tapButton.addEventListener('click', handleTap);
+
+    themeToggle.addEventListener('click', () => {
+      body.classList.toggle('dark-mode');
+    });
+  </script>
+</body>
+</html>
